@@ -105,8 +105,13 @@ mkdir -p "$OUTPUT_DIR"
 # Build yt-dlp command
 YT_DLP_CMD="yt-dlp"
 
-# Output filename template
-YT_DLP_CMD="$YT_DLP_CMD --output \"$OUTPUT_DIR/%(playlist_index)s - %(title)s.%(ext)s\""
+# Create subdirectories for videos and descriptions
+VIDEOS_DIR="$OUTPUT_DIR/videos"
+DESCRIPTIONS_DIR="$OUTPUT_DIR/descriptions"
+mkdir -p "$VIDEOS_DIR" "$DESCRIPTIONS_DIR"
+
+# Output filename template for videos
+YT_DLP_CMD="$YT_DLP_CMD --output \"$VIDEOS_DIR/%(playlist_index)s - %(title)s.%(ext)s\""
 
 # Format selection
 if [ "$AUDIO_ONLY" = true ]; then
@@ -130,8 +135,8 @@ elif [ "$START_INDEX" != "1" ]; then
     echo -e "${BLUE}Range: From video $START_INDEX to end${NC}"
 fi
 
-# Additional options
-YT_DLP_CMD="$YT_DLP_CMD --write-info-json --write-description --write-thumbnail"
+# Additional options - only descriptions, no JSON or thumbnails
+YT_DLP_CMD="$YT_DLP_CMD --write-description"
 YT_DLP_CMD="$YT_DLP_CMD --embed-chapters --embed-metadata"
 YT_DLP_CMD="$YT_DLP_CMD --ignore-errors --no-overwrites"
 
@@ -152,13 +157,17 @@ echo ""
 # Execute the command
 eval $YT_DLP_CMD
 
+# Move description files to descriptions directory
+echo ""
+echo -e "${BLUE}Organizing files...${NC}"
+find "$VIDEOS_DIR" -name "*.description" -exec mv {} "$DESCRIPTIONS_DIR/" \;
+
 echo ""
 echo -e "${GREEN}Download completed!${NC}"
 echo -e "${GREEN}Files saved to: $OUTPUT_DIR${NC}"
 
 # Show summary
-VIDEO_COUNT=$(find "$OUTPUT_DIR" -name "*.mp4" -o -name "*.mkv" -o -name "*.webm" -o -name "*.mp3" | wc -l)
-echo -e "${YELLOW}Total files downloaded: $VIDEO_COUNT${NC}"
-
-
-
+VIDEO_COUNT=$(find "$VIDEOS_DIR" -name "*.mp4" -o -name "*.mkv" -o -name "*.webm" -o -name "*.mp3" | wc -l)
+DESCRIPTION_COUNT=$(find "$DESCRIPTIONS_DIR" -name "*.description" | wc -l)
+echo -e "${YELLOW}Total videos downloaded: $VIDEO_COUNT${NC}"
+echo -e "${YELLOW}Total descriptions saved: $DESCRIPTION_COUNT${NC}"
